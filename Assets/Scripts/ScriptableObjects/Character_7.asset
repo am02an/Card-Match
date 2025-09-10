@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e3ff4772fccbb64bb4aaad65ee1e7cb, type: 3}
-  m_Name: NoddlesCard
+  m_Name: Character_7
   m_EditorClassIdentifier: 
-  id: Noddles
-  faceSprite: {fileID: 21300000, guid: 87f3b5219c037194b9df7c63171a4c40, type: 3}
+  id: Character_7
+  faceSprite: {fileID: 21300000, guid: de83c56392cba4eef9bfcb4d07fcc2c3, type: 3}

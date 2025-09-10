@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e3ff4772fccbb64bb4aaad65ee1e7cb, type: 3}
-  m_Name: VeggieCard
+  m_Name: Character_4
   m_EditorClassIdentifier: 
-  id: Veggie
-  faceSprite: {fileID: 21300000, guid: a3e84a8df1f715d46b36822fc923fad9, type: 3}
+  id: Character_4
+  faceSprite: {fileID: 21300000, guid: 6bc1b8ad7a39f45d6a92ed46a98f4b5d, type: 3}

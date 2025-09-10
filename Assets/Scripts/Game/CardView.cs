@@ -11,7 +11,7 @@ public class CardView : MonoBehaviour
     public Image backImage;
     public Button button;
 
-    private CardModel model;
+    public CardModel model;
     private bool isAnimating = false;
 
     private void Awake()
@@ -66,4 +66,9 @@ public class CardView : MonoBehaviour
         transform.rotation = endRot;
         isAnimating = false;
     }
+    public void FlipDown()
+    {
+        StartCoroutine(PlayFlipAnimation(false));
+    }
+
 }

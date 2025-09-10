@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3e3ff4772fccbb64bb4aaad65ee1e7cb, type: 3}
-  m_Name: EggCard
+  m_Name: Character_13
   m_EditorClassIdentifier: 
-  id: Egg
-  faceSprite: {fileID: 21300000, guid: ead7dabbba0a4c944a8039abaa07dbec, type: 3}
+  id: Character_13
+  faceSprite: {fileID: 21300000, guid: f4bfb6d2b98a244b08c311d31794f7d5, type: 3}
