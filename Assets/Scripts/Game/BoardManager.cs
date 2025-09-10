@@ -12,6 +12,7 @@ public class BoardManager : MonoBehaviour
     public CardView cardPrefab;
     public GameConfig gameConfig;
     public List<CardData> availableCards;
+    public static System.Action OnMatchFound;
     [Header("Grid Info ")]
 
     public int rows = 2;
@@ -24,7 +25,6 @@ public class BoardManager : MonoBehaviour
     private List<CardModel> activeCards = new List<CardModel>();
     private CardView firstSelected;
     private CardView secondSelected;
-    private bool isCheckingMatch = false;
     private int matchesFound = 0;
     public void OnEnable()
     {
@@ -37,10 +37,10 @@ public class BoardManager : MonoBehaviour
     }
     private void Start()
     {
-        GenerateBoard(rows,cols);
+        GenerateBoard();
     }
 
-    void GenerateBoard(int r, int c)
+    void GenerateBoard()
     {
         
         ClearBoard();
@@ -103,17 +103,17 @@ public class BoardManager : MonoBehaviour
     }
     public void OnCardFlipped(CardModel model, CardView view)
     {
-        if (model.isMatched) return; // ignore matched cards
-        if (view == firstSelected) return; // prevent double-click on same card
+        if (model.isMatched) return; 
+        if (view == firstSelected) return; 
 
-        // Select first card
+       
         if (firstSelected == null)
         {
             firstSelected = view;
         }
         else
         {
-            // Second card → enqueue for checking
+           
             checkQueue.Enqueue((firstSelected, view));
             firstSelected = null;
 
@@ -134,10 +134,11 @@ public class BoardManager : MonoBehaviour
 
             if (cardA.model.id == cardB.model.id)
             {
-                //  Match
+               
                 cardA.model.isMatched = true;
                 cardB.model.isMatched = true;
                 matchesFound++;
+                OnMatchFound?.Invoke();
                 StartCoroutine(MatchAnimation(cardA.transform));
                 StartCoroutine(MatchAnimation(cardB.transform));
 
@@ -147,7 +148,6 @@ public class BoardManager : MonoBehaviour
             {
                 Debug.Log("Mismatch: " + cardA.model.id + " vs " + cardB.model.id);
                 yield return StartCoroutine(MismatchAnimation(cardA.transform, cardB.transform));
-         //       yield return new WaitForSeconds(gameConfig.mismatchRevealDuration);
                 cardA.FlipDown();
                 cardB.FlipDown();
             }
