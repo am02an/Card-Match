@@ -18,3 +18,44 @@ MonoBehaviour:
   comboMutlplier: 0.2
   comboWindoSeconds: 3
   cardSpacing: {x: 10, y: 10}
+  levels:
+  - levelNumber: 1
+    rows: 2
+    cols: 2
+    threeStarTurns: 2
+    twoStarTurns: 3
+  - levelNumber: 2
+    rows: 2
+    cols: 3
+    threeStarTurns: 3
+    twoStarTurns: 5
+  - levelNumber: 3
+    rows: 2
+    cols: 4
+    threeStarTurns: 4
+    twoStarTurns: 6
+  - levelNumber: 4
+    rows: 3
+    cols: 4
+    threeStarTurns: 6
+    twoStarTurns: 8
+  - levelNumber: 5
+    rows: 4
+    cols: 4
+    threeStarTurns: 8
+    twoStarTurns: 12
+  - levelNumber: 6
+    rows: 4
+    cols: 5
+    threeStarTurns: 10
+    twoStarTurns: 14
+  - levelNumber: 7
+    rows: 4
+    cols: 6
+    threeStarTurns: 12
+    twoStarTurns: 18
+  - levelNumber: 8
+    rows: 5
+    cols: 6
+    threeStarTurns: 15
+    twoStarTurns: 20

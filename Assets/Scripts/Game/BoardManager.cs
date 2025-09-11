@@ -13,6 +13,9 @@ public class BoardManager : MonoBehaviour
     public GameConfig gameConfig;
     public List<CardData> availableCards;
     public static System.Action OnMatchFound;
+    public static System.Action<int> OnTurnChanged;
+    public static System.Action OnResetScore;
+    public static System.Action<int> OnLevelUpdate;
     [Header("Grid Info ")]
 
     public int rows = 2;
@@ -26,6 +29,15 @@ public class BoardManager : MonoBehaviour
     private CardView firstSelected;
     private CardView secondSelected;
     private int matchesFound = 0;
+    private int turnCount = 0;
+    private int currentLevel = 1;
+    private int currentCombo = 0;
+    private int bestCombo = 0;
+
+    private void Start()
+    {
+        StartLevel(1);
+    }
     public void OnEnable()
     {
         CardEvents.CardFlipped += OnCardFlipped;
@@ -35,12 +47,19 @@ public class BoardManager : MonoBehaviour
         CardEvents.CardFlipped -= OnCardFlipped;
         
     }
-    private void Start()
+   
+    public void StartLevel(int level)
     {
-        GenerateBoard();
-    }
+        currentLevel = Mathf.Clamp(level, 1, gameConfig.levels.Count);
+        OnLevelUpdate?.Invoke(currentLevel);
+        // fetch level config
+        var config = gameConfig.levels[currentLevel - 1];
+        rows = config.rows;
+        cols = config.cols;
 
-    void GenerateBoard()
+        GenerateBoard(rows, cols);
+    }
+    void GenerateBoard(int r,int c)
     {
         
         ClearBoard();
@@ -131,6 +150,8 @@ public class BoardManager : MonoBehaviour
             var (cardA, cardB) = checkQueue.Dequeue();
 
             yield return new WaitForSeconds(gameConfig.flipAnimationDuration);
+            turnCount++;
+            OnTurnChanged?.Invoke(turnCount);
 
             if (cardA.model.id == cardB.model.id)
             {
@@ -139,6 +160,8 @@ public class BoardManager : MonoBehaviour
                 cardB.model.isMatched = true;
                 matchesFound++;
                 OnMatchFound?.Invoke();
+                currentCombo++; // increase combo streak
+                bestCombo = Mathf.Max(bestCombo, currentCombo);
                 StartCoroutine(MatchAnimation(cardA.transform));
                 StartCoroutine(MatchAnimation(cardB.transform));
 
@@ -146,6 +169,9 @@ public class BoardManager : MonoBehaviour
             }
             else
             {
+                currentCombo = 0;
+                UiManager.Instance.HideCombo();
+
                 Debug.Log("Mismatch: " + cardA.model.id + " vs " + cardB.model.id);
                 yield return StartCoroutine(MismatchAnimation(cardA.transform, cardB.transform));
                 cardA.FlipDown();
@@ -155,11 +181,56 @@ public class BoardManager : MonoBehaviour
             if (matchesFound >= activeCards.Count / 2)
             {
                 Debug.Log("Game Over! All matches found.");
+                StopAllCoroutines();
+                OnResetScore?.Invoke();
+                EndLevel();
+                ResetScore();
             }
         }
 
         isProcessingQueue = false;
     }
+    private IEnumerator NextLevel()
+    {
+        yield return new WaitForSeconds(3f);
+        StartCoroutine(UIFadeUtility.FadeOut(UiManager.Instance. victoryPanel, 0.2f));
+        StartLevel(currentLevel + 1);
+    }
+   void ResetScore()
+    {
+        turnCount = 0;
+        matchesFound = 0;
+    }
+    private void EndLevel()
+    {
+        Debug.Log("Game Over! All matches found.");
+        StartCoroutine(UIFadeUtility.FadeIn(UiManager.Instance.victoryPanel, 0.2f));
+        int stars = CalculateStars(turnCount);
+        Debug.Log("Level " + currentLevel + " completed with " + stars + " stars!");
+
+        UiManager.Instance.ShowLevelComplete(stars, turnCount); // 🔔 notify UI
+
+        StartCoroutine(NextLevel());
+    }
+
+    private int CalculateStars(int turns)
+    {
+        var config = gameConfig.levels[currentLevel - 1];
+
+        int threeStar = Mathf.Min(config.threeStarTurns, config.twoStarTurns - 1);
+        int twoStar = config.twoStarTurns;
+
+        Debug.Log($"[StarCalc] Level {currentLevel} | Turns: {turns} | 3⭐ <= {threeStar} | 2⭐ <= {twoStar}");
+
+        if (turns <= threeStar)
+            return 3;
+        else if (turns <= twoStar)
+            return 2;
+        else
+            return 1;
+    }
+
+
     private void AutoScaleCards()
     {
         Vector2 size = boardContainer.rect.size;
