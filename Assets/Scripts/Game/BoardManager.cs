@@ -6,23 +6,30 @@ using TMPro;
 
 public class BoardManager : MonoBehaviour
 {
-
+    #region Serialized Fields
     [Header("References")]
     public RectTransform boardContainer;
     public GridLayoutGroup gridLayout;
     public CardView cardPrefab;
     public GameConfig gameConfig;
     public List<CardData> availableCards;
+
+    [Header("Grid Info")]
+    public int rows = 2;
+    public int cols = 2;
+
+    [Header("Game Rules")]
+    public bool allowContinuousFlip = false;
+    #endregion
+
+    #region Events
     public static System.Action OnMatchFound;
     public static System.Action<int> OnTurnChanged;
     public static System.Action OnResetScore;
     public static System.Action<int> OnLevelUpdate;
-    [Header("Grid Info ")]
+    #endregion
 
-    public int rows = 2;
-    public int cols = 2;
-    [Header("Game Rules")]
-    public bool allowContinuousFlip = false;
+    #region Private Variables
     private Queue<(CardView, CardView)> checkQueue = new Queue<(CardView, CardView)>();
     private bool isProcessingQueue = false;
 
@@ -30,58 +37,88 @@ public class BoardManager : MonoBehaviour
     private Queue<CardView> cardPool = new Queue<CardView>();
     private CardView firstSelected;
     private CardView secondSelected;
+
     private int matchesFound = 0;
     private int turnCount = 0;
     private int currentLevel = 1;
     private int currentCombo = 0;
     private int bestCombo = 0;
+    #endregion
 
-
+    #region Unity Lifecycle
     private void Start()
     {
         StartLevel(1);
     }
-    public void OnEnable()
+
+    private void OnEnable()
     {
         CardEvents.CardFlipped += OnCardFlipped;
     }
-    public void OnDisable()
+
+    private void OnDisable()
     {
         CardEvents.CardFlipped -= OnCardFlipped;
-
     }
+    #endregion
 
+    #region Level Management
     public void StartLevel(int level)
     {
         activeCards.Clear();
         ResetCards();
         currentLevel = Mathf.Clamp(level, 1, gameConfig.levels.Count);
         OnLevelUpdate?.Invoke(currentLevel);
-        // fetch level config
+
         var config = gameConfig.levels[currentLevel - 1];
         rows = config.rows;
         cols = config.cols;
+
         EnsurePoolCapacity(rows * cols);
         GenerateBoard(rows, cols);
     }
-    void GenerateBoard(int r, int c)
-    {
 
+    private IEnumerator NextLevel()
+    {
+        yield return new WaitForSeconds(3f);
+        StartCoroutine(UIFadeUtility.FadeOut(UiManager.Instance.victoryPanel, 0.2f));
+        StartLevel(currentLevel + 1);
+    }
+
+    private void EndLevel()
+    {
+        Debug.Log("Game Over! All matches found.");
+        StartCoroutine(UIFadeUtility.FadeIn(UiManager.Instance.victoryPanel, 0.2f));
+
+        int stars = CalculateStars(turnCount);
+        Debug.Log($"Level {currentLevel} completed with {stars} stars!");
+
+        UiManager.Instance.ShowLevelComplete(stars, turnCount);
+
+        StartCoroutine(NextLevel());
+    }
+    #endregion
+
+    #region Board Generation
+    private void GenerateBoard(int r, int c)
+    {
         gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         gridLayout.constraintCount = cols;
+
         int totalCards = rows * cols;
         if (totalCards % 2 != 0)
         {
             Debug.LogError("Board must have even number of cards");
             return;
-
         }
+
         if (availableCards.Count < totalCards / 2)
         {
             Debug.LogError($"Not enough unique cards! Need {totalCards / 2}, but only have {availableCards.Count}");
             return;
         }
-        //Pick random pairs
+
+        // Pick random pairs
         List<CardData> pool = new List<CardData>();
         while (pool.Count < totalCards / 2)
         {
@@ -89,15 +126,16 @@ public class BoardManager : MonoBehaviour
             if (!pool.Contains(random))
                 pool.Add(random);
         }
-        // duplicate to form pairs
+
+        // Duplicate to form pairs
         List<CardData> finalDeck = new List<CardData>();
         foreach (var card in pool)
         {
-            Debug.Log(card.id);
             finalDeck.Add(card);
             finalDeck.Add(card);
         }
-        // shuffle
+
+        // Shuffle
         for (int i = 0; i < finalDeck.Count; i++)
         {
             CardData temp = finalDeck[i];
@@ -105,26 +143,26 @@ public class BoardManager : MonoBehaviour
             finalDeck[i] = finalDeck[randomNum];
             finalDeck[randomNum] = temp;
         }
-        // spawn
-        //int currentCount = cardPool.Count + boardContainer.childCount;
+
+        // Spawn
         for (int i = 0; i < finalDeck.Count; i++)
         {
             CardView card = GetCardFromPool();
             CardModel model = new CardModel(finalDeck[i].id, i);
             activeCards.Add(model);
-
             card.Bind(model, finalDeck[i].faceSprite);
         }
+
         AutoScaleCards();
     }
+
     private void EnsurePoolCapacity(int requiredCount)
     {
-
         int currentCount = cardPool.Count + boardContainer.childCount;
         int toCreate = requiredCount - currentCount;
+
         if (toCreate > 0)
         {
-            // Prewarm extra cards if needed
             for (int i = 0; i < toCreate; i++)
             {
                 CardView card = Instantiate(cardPrefab, boardContainer);
@@ -134,6 +172,16 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    private void AutoScaleCards()
+    {
+        Vector2 size = boardContainer.rect.size;
+        float cellWidth = (size.x - (gridLayout.spacing.x * (cols - 1))) / cols;
+        float cellHeight = (size.y - (gridLayout.spacing.y * (rows - 1))) / rows;
+        gridLayout.cellSize = new Vector2(cellWidth, cellHeight);
+    }
+    #endregion
+
+    #region Card Pooling
     private CardView GetCardFromPool()
     {
         if (cardPool.Count > 0)
@@ -144,16 +192,14 @@ public class BoardManager : MonoBehaviour
         }
         else
         {
-            // Safety fallback: should not happen if EnsurePoolCapacity works correctly
             return Instantiate(cardPrefab, boardContainer);
         }
     }
-    
+
     private void ResetCards()
     {
         if (boardContainer.childCount > 0)
         {
-
             for (int i = 0; i < boardContainer.childCount; i++)
             {
                 Transform child = boardContainer.GetChild(i);
@@ -165,15 +211,15 @@ public class BoardManager : MonoBehaviour
                 }
             }
         }
-          
     }
 
     private void ReturnCardToPool(CardView card)
-    { 
-        card.gameObject.SetActive(false); 
-        card.transform.SetParent(boardContainer, false); 
-        cardPool.Enqueue(card); 
+    {
+        card.gameObject.SetActive(false);
+        card.transform.SetParent(boardContainer, false);
+        cardPool.Enqueue(card);
     }
+
     private void ClearBoard()
     {
         foreach (Transform child in boardContainer)
@@ -182,11 +228,13 @@ public class BoardManager : MonoBehaviour
         }
         activeCards.Clear();
     }
+    #endregion
+
+    #region Card Flip & Match Logic
     public void OnCardFlipped(CardModel model, CardView view)
     {
-        if (model.isMatched) return;
-        if (view == firstSelected) return;
-
+        if (model.isMatched || view == firstSelected)
+            return;
 
         if (firstSelected == null)
         {
@@ -194,7 +242,6 @@ public class BoardManager : MonoBehaviour
         }
         else
         {
-
             checkQueue.Enqueue((firstSelected, view));
             firstSelected = null;
 
@@ -210,32 +257,18 @@ public class BoardManager : MonoBehaviour
         while (checkQueue.Count > 0)
         {
             var (cardA, cardB) = checkQueue.Dequeue();
-
             yield return new WaitForSeconds(gameConfig.flipAnimationDuration);
+
             turnCount++;
             OnTurnChanged?.Invoke(turnCount);
 
             if (cardA.model.id == cardB.model.id)
             {
-
-                cardA.model.isMatched = true;
-                cardB.model.isMatched = true;
-                matchesFound++;
-                OnMatchFound?.Invoke();
-                currentCombo++; // increase combo streak
-                UiManager.Instance.ShowCombo(currentCombo);
-                bestCombo = Mathf.Max(bestCombo, currentCombo);
-                StartCoroutine(MatchAnimation(cardA.transform));
-                StartCoroutine(MatchAnimation(cardB.transform));
-
-                Debug.Log("Match found: " + cardA.model.id);
+                HandleMatch(cardA, cardB);
             }
             else
             {
-                currentCombo = 0;
-                UiManager.Instance.HideCombo();
-
-                Debug.Log("Mismatch: " + cardA.model.id + " vs " + cardB.model.id);
+                HandleMismatch(cardA, cardB);
                 yield return StartCoroutine(MismatchAnimation(cardA.transform, cardB.transform));
                 cardA.FlipDown();
                 cardB.FlipDown();
@@ -243,7 +276,6 @@ public class BoardManager : MonoBehaviour
 
             if (matchesFound >= activeCards.Count / 2)
             {
-                Debug.Log("Game Over! All matches found.");
                 StopAllCoroutines();
                 OnResetScore?.Invoke();
                 EndLevel();
@@ -253,28 +285,41 @@ public class BoardManager : MonoBehaviour
 
         isProcessingQueue = false;
     }
-    private IEnumerator NextLevel()
+
+    private void HandleMatch(CardView cardA, CardView cardB)
     {
-        yield return new WaitForSeconds(3f);
-        StartCoroutine(UIFadeUtility.FadeOut(UiManager.Instance.victoryPanel, 0.2f));
-        StartLevel(currentLevel + 1);
+        cardA.model.isMatched = true;
+        cardB.model.isMatched = true;
+
+        matchesFound++;
+        OnMatchFound?.Invoke();
+
+        currentCombo++;
+        UiManager.Instance.ShowCombo(currentCombo);
+        bestCombo = Mathf.Max(bestCombo, currentCombo);
+
+        StartCoroutine(MatchAnimation(cardA.transform));
+        StartCoroutine(MatchAnimation(cardB.transform));
+
+        Debug.Log($"Match found: {cardA.model.id}");
     }
-    void ResetScore()
+
+    private void HandleMismatch(CardView cardA, CardView cardB)
+    {
+        currentCombo = 0;
+        UiManager.Instance.HideCombo();
+
+        Debug.Log($"Mismatch: {cardA.model.id} vs {cardB.model.id}");
+    }
+    #endregion
+
+    #region Score & Star Calculation
+    private void ResetScore()
     {
         turnCount = 0;
         matchesFound = 0;
     }
-    private void EndLevel()
-    {
-        Debug.Log("Game Over! All matches found.");
-        StartCoroutine(UIFadeUtility.FadeIn(UiManager.Instance.victoryPanel, 0.2f));
-        int stars = CalculateStars(turnCount);
-        Debug.Log("Level " + currentLevel + " completed with " + stars + " stars!");
 
-        UiManager.Instance.ShowLevelComplete(stars, turnCount); // 🔔 notify UI
-
-        StartCoroutine(NextLevel());
-    }
     private int CalculateStars(int turns)
     {
         var config = gameConfig.levels[currentLevel - 1];
@@ -291,19 +336,13 @@ public class BoardManager : MonoBehaviour
         else
             return 1;
     }
-    private void AutoScaleCards()
-    {
-        Vector2 size = boardContainer.rect.size;
-        float cellWidth = (size.x - (gridLayout.spacing.x * (cols - 1))) / cols;
-        float cellHeight = (size.y - (gridLayout.spacing.y * (rows - 1))) / rows;
+    #endregion
 
-        gridLayout.cellSize = new Vector2(cellWidth, cellHeight);
-    }
+    #region Animations
     private IEnumerator MatchAnimation(Transform card)
     {
         Vector3 originalScale = card.localScale;
 
-        // Pop effect
         float t = 0;
         while (t < 1)
         {
@@ -320,15 +359,16 @@ public class BoardManager : MonoBehaviour
             yield return null;
         }
 
-        // Idle pulse (small breathing effect for matched cards)
+        // Idle pulse effect
         while (true)
         {
-            float pulse = (Mathf.Sin(Time.time * 2f) + 1f) / 2f; // 0 → 1
-            float scale = Mathf.Lerp(1f, 0.8f, pulse);           // map into [1, 0.8]
+            float pulse = (Mathf.Sin(Time.time * 2f) + 1f) / 2f;
+            float scale = Mathf.Lerp(1f, 0.8f, pulse);
             card.localScale = originalScale * scale;
             yield return null;
         }
     }
+
     private IEnumerator MismatchAnimation(Transform cardA, Transform cardB)
     {
         Vector3 posA = cardA.localPosition;
@@ -352,4 +392,5 @@ public class BoardManager : MonoBehaviour
         cardA.localPosition = posA;
         cardB.localPosition = posB;
     }
+    #endregion
 }
