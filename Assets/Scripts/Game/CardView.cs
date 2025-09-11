@@ -25,7 +25,11 @@ public class CardView : MonoBehaviour
     {
         button.onClick.AddListener(OnCardClicked);
     }
+    private void Start()
+    {
+        button.onClick.AddListener(() => AudioManager.Instance.PlaySFX("CardSound"));
 
+    }
     private void Update()
     {
         RotateBackFace();
