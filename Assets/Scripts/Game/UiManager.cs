@@ -17,6 +17,12 @@ public class UiManager : MonoBehaviour
   public CanvasGroup victoryPanel;
     private Vector3 originalScale;
 
+    [SerializeField] private TextMeshProUGUI fpsText;
+    [SerializeField] private float updateInterval = 0.5f; // Update every half second
+    [Header("FPS Setting ")]
+    private float accum = 0f;  // FPS accumulated over the interval
+    private int frames = 0;    // Frames drawn over the interval
+    private float timeLeft;
     private void Awake()
     {
         Instance = this;
@@ -53,12 +59,14 @@ public class UiManager : MonoBehaviour
     }
     private void UpdateLevel(int _levelCount)
     {
-        levelCount.text = "Level :"+ _levelCount.ToString();
+        levelCount.text = "Level :"+" "+ _levelCount.ToString();
     }
     private void ResetScore()
     {
         _turnCount.text = "0";
         matchCount.text = "0";
+        matches = 0;
+       
     }
     public void ShowCombo(int combo)
     {
@@ -159,6 +167,21 @@ public class UiManager : MonoBehaviour
             t += Time.deltaTime * 6f;
             target.localScale = Vector3.Lerp(bigScale, originalScale, t);
             yield return null;
+        }
+    }
+    private void Update()
+    {
+        timeLeft -= Time.deltaTime;
+        accum += Time.timeScale / Time.deltaTime;
+        ++frames;
+
+        if (timeLeft <= 0.0)
+        {
+            float fps = accum / frames;
+            fpsText.text = $"FPS: {Mathf.RoundToInt(fps)}";
+            timeLeft = updateInterval;
+            accum = 0f;
+            frames = 0;
         }
     }
 }

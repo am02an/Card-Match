@@ -70,5 +70,18 @@ public class CardView : MonoBehaviour
     {
         StartCoroutine(PlayFlipAnimation(false));
     }
-
+    public void ResetCard()
+    {
+        StopAllCoroutines();
+        isAnimating = false;
+        transform.rotation = Quaternion.identity;
+        transform.localScale = Vector3.one;
+        if(model!=null)
+        {
+            model.isFaceUp = false;
+            model.isMatched = false;
+        }
+        UpdateVisual();
+        gameObject.SetActive(true);
+    }
 }
