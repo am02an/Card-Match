@@ -14,8 +14,11 @@ public class UiManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _turnCount;
     [SerializeField] private TextMeshProUGUI levelCount;
     [SerializeField] private TextMeshProUGUI comboText;
+    [SerializeField] private TextMeshProUGUI coinEarn;
     [SerializeField] private CanvasGroup panel;
     [SerializeField] private Image[] starIcons;
+    public TextMeshProUGUI playerNameText;
+    public TextMeshProUGUI coinsText;
     public CanvasGroup victoryPanel;
 
     [Header("FPS Setting")]
@@ -25,6 +28,7 @@ public class UiManager : MonoBehaviour
 
     #region Private Variables
     private int matches = 0;
+    private int turn = 0;
     private Vector3 originalScale;
 
     private float accum = 0f;  // FPS accumulated over the interval
@@ -46,6 +50,7 @@ public class UiManager : MonoBehaviour
         BoardManager.OnTurnChanged += HandleTurnChanged;
         BoardManager.OnResetScore += ResetScore;
         BoardManager.OnLevelUpdate += UpdateLevel;
+        SaveManager.DataChanged += UpdatePlayerUI;
     }
 
     private void OnDisable()
@@ -54,7 +59,9 @@ public class UiManager : MonoBehaviour
         BoardManager.OnTurnChanged -= HandleTurnChanged;
         BoardManager.OnResetScore -= ResetScore;
         BoardManager.OnLevelUpdate -= UpdateLevel;
+        SaveManager.DataChanged -= UpdatePlayerUI;
     }
+
 
     private void Update()
     {
@@ -73,6 +80,7 @@ public class UiManager : MonoBehaviour
 
     private void HandleTurnChanged(int turnCount)
     {
+        turn = turnCount;
         _turnCount.text = turnCount.ToString();
         StartCoroutine(PopEffect(_turnCount.transform));
     }
@@ -87,18 +95,37 @@ public class UiManager : MonoBehaviour
         _turnCount.text = "0";
         matchCount.text = "0";
         matches = 0;
+        turn = 0;
+    }
+    public void UpdatePlayerUI()
+    {
+        if (SaveManager.Instance == null || SaveManager.Instance.playerData == null)
+        {
+            Debug.LogWarning("[PlayerUIManager] No SaveManager data found to update UI!");
+            return;
+        }
+
+        var data = SaveManager.Instance.playerData;
+
+        if (playerNameText != null)
+            playerNameText.text = data.playerName;
+
+        if (coinsText != null)
+            coinsText.text = data.coins.ToString();
+
+        Debug.Log("[PlayerUIManager] UI Updated");
     }
     #endregion
 
     #region Combo System
-    public void ShowCombo(int combo)
+    public void ShowCombo(int comboCounter)
     {
-        if (combo < 2) return; // show only for 2+ streak
+        if (comboCounter < 2) return; // only show after second consecutive match
 
-        comboText.text = $" {combo}x Combo!";
+        comboText.text = $"{comboCounter}x Combo!";
         comboText.gameObject.SetActive(true);
 
-        StopAllCoroutines();
+        StopCoroutine(nameof(ComboPopAnimation)); // stop any running animation
         StartCoroutine(ComboPopAnimation());
     }
 
@@ -141,9 +168,9 @@ public class UiManager : MonoBehaviour
     #endregion
 
     #region Level Complete
-    public void ShowLevelComplete(int stars, int turns)
+    public void ShowLevelComplete(int stars, int gold)
     {
-        Debug.Log("fadeout");
+        coinEarn.text ="+"+ gold.ToString();
         StopAllCoroutines();
         for (int i = 0; i < starIcons.Length; i++)
         {
@@ -164,6 +191,24 @@ public class UiManager : MonoBehaviour
             yield return null;
         }
     }
+    public int CalculateGoldReward(List<CardModel> activeCards, int currentLevel, int bestCombo)
+    {
+        int baseGold = matches * 10; // 10 gold per match
+        int efficiencyBonus = Mathf.Max(0, (activeCards.Count / 2) * 2 - turn) * 5;
+        int comboBonus = bestCombo * 15;
+
+        int totalGold = baseGold + efficiencyBonus + comboBonus;
+
+
+        float levelMultiplier = 1f + (currentLevel - 1) * 0.25f;
+
+        totalGold = Mathf.RoundToInt(totalGold * levelMultiplier);
+
+        totalGold = Mathf.Clamp(totalGold, 10, 9999);
+
+        return totalGold;
+    }
+
     #endregion
 
     #region Panel Controls
@@ -220,4 +265,5 @@ public class UiManager : MonoBehaviour
         }
     }
     #endregion
+
 }

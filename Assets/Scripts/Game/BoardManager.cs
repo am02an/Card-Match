@@ -46,11 +46,11 @@ public class BoardManager : MonoBehaviour
     #endregion
 
     #region Unity Lifecycle
-    private void Start()
+   
+    public void StartGame()
     {
-        StartLevel(1);
+        StartLevel(SaveManager.Instance.playerData.currentLevel);
     }
-
     private void OnEnable()
     {
         CardEvents.CardFlipped += OnCardFlipped;
@@ -67,7 +67,10 @@ public class BoardManager : MonoBehaviour
     {
         activeCards.Clear();
         ResetCards();
+        currentCombo = 0;
         currentLevel = Mathf.Clamp(level, 1, gameConfig.levels.Count);
+        SaveManager.Instance.playerData.currentLevel = level;
+        SaveManager.Instance.SaveData();
         OnLevelUpdate?.Invoke(currentLevel);
 
         var config = gameConfig.levels[currentLevel - 1];
@@ -83,6 +86,7 @@ public class BoardManager : MonoBehaviour
         yield return new WaitForSeconds(3f);
         StartCoroutine(UIFadeUtility.FadeOut(UiManager.Instance.victoryPanel, 0.2f));
         StartLevel(currentLevel + 1);
+        SaveManager.Instance.playerData.currentLevel += currentLevel;
     }
 
     private void EndLevel()
@@ -93,7 +97,9 @@ public class BoardManager : MonoBehaviour
         int stars = CalculateStars(turnCount);
         Debug.Log($"Level {currentLevel} completed with {stars} stars!");
 
-        UiManager.Instance.ShowLevelComplete(stars, turnCount);
+        int earnGold = UiManager.Instance.CalculateGoldReward(activeCards, currentLevel, bestCombo);
+        SaveManager.Instance.playerData.coins +=earnGold;
+        UiManager.Instance.ShowLevelComplete(stars, earnGold);
 
         StartCoroutine(NextLevel());
     }
@@ -318,6 +324,8 @@ public class BoardManager : MonoBehaviour
     {
         turnCount = 0;
         matchesFound = 0;
+        bestCombo = 0;
+        currentCombo = 0;
     }
 
     private int CalculateStars(int turns)
