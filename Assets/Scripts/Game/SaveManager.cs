@@ -78,13 +78,11 @@ public class SaveManager : MonoBehaviour
     /// </summary>
     public void ClearData()
     {
-        PlayerPrefs.DeleteKey(SAVE_KEY);
-        playerData = new PlayerData
-        {
-            playerName = "Player",
-            currentLevel = 1,
-            coins = 0,
-        };
+        playerData.currentLevel = 1;
+        playerData.coins = 0;
+        playerData.allTurn = 0;           
+
+        SaveData();
         Debug.Log("[SaveManager] Data Cleared!");
     }
 }
@@ -98,4 +96,5 @@ public class PlayerData
     public string playerName;
     public int currentLevel;
     public int coins;
+    public int allTurn;
 }

@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Character_6
   m_EditorClassIdentifier: 
   id: Character_6
-  faceSprite: {fileID: 21300000, guid: e0a9944a641ef40528503a85dd2237a1, type: 3}
+  faceSprite: {fileID: 21300000, guid: 541ddfff9e82d4ac2a38535feed1490f, type: 3}

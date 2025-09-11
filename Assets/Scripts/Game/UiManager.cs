@@ -15,6 +15,13 @@ public class UiManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI levelCount;
     [SerializeField] private TextMeshProUGUI comboText;
     [SerializeField] private TextMeshProUGUI coinEarn;
+    [Header("Game Stats UI References")]
+    public GameObject star1;
+    public GameObject star2;
+    public GameObject star3;
+    public TextMeshProUGUI turnText;
+    public CanvasGroup statsPanel;
+
     [SerializeField] private CanvasGroup panel;
     [SerializeField] private Image[] starIcons;
     public TextMeshProUGUI playerNameText;
@@ -121,6 +128,7 @@ public class UiManager : MonoBehaviour
     public void ShowCombo(int comboCounter)
     {
         if (comboCounter < 2) return; // only show after second consecutive match
+        AudioManager.Instance.PlayComboSound(comboCounter);
 
         comboText.text = $"{comboCounter}x Combo!";
         comboText.gameObject.SetActive(true);
@@ -207,6 +215,35 @@ public class UiManager : MonoBehaviour
         totalGold = Mathf.Clamp(totalGold, 10, 9999);
 
         return totalGold;
+    }
+    public void CalculateOverallStars(int threeStarCount, int twoStarCount)
+    {
+        int totalStars = (threeStarCount * 3) + (twoStarCount * 2);
+        int totalTurns = SaveManager.Instance.playerData.allTurn;
+
+        int totalLevels = threeStarCount + twoStarCount; 
+        float maxStars = totalLevels * 3f;
+        float thinkingPercentage = maxStars > 0 ? (totalStars / maxStars) * 100f : 0f;
+
+        SaveManager.Instance.SaveData();
+
+        if (turnText != null)
+            turnText.text = $"Turns: {totalTurns} ({thinkingPercentage:F1}%)";
+
+        float average = totalLevels > 0 ? (float)totalStars / totalLevels : 0f; 
+        int roundedStars = Mathf.RoundToInt(average);
+
+        SetStars(roundedStars);
+    }
+
+
+
+    private void SetStars(int stars)
+    {
+        stars = Mathf.Clamp(stars, 0, 3);
+        star1.SetActive(stars >= 1);
+        star2.SetActive(stars >= 2);
+        star3.SetActive(stars >= 3);
     }
 
     #endregion

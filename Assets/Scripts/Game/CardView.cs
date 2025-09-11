@@ -27,7 +27,7 @@ public class CardView : MonoBehaviour
     }
     private void Start()
     {
-        button.onClick.AddListener(() => AudioManager.Instance.PlaySFX("CardSound"));
+        button.onClick.AddListener(() => AudioManager.Instance.PlaySFX("Flip"));
 
     }
     private void Update()

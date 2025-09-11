@@ -59,3 +59,13 @@ MonoBehaviour:
     cols: 6
     threeStarTurns: 15
     twoStarTurns: 20
+  - levelNumber: 9
+    rows: 6
+    cols: 6
+    threeStarTurns: 18
+    twoStarTurns: 25
+  - levelNumber: 10
+    rows: 6
+    cols: 6
+    threeStarTurns: 23
+    twoStarTurns: 27

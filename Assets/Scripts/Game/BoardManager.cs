@@ -65,6 +65,7 @@ public class BoardManager : MonoBehaviour
     #region Level Management
     public void StartLevel(int level)
     {
+        AudioManager.Instance.SetBGMVolume(0.3f);
         activeCards.Clear();
         ResetCards();
         currentCombo = 0;
@@ -80,28 +81,44 @@ public class BoardManager : MonoBehaviour
         EnsurePoolCapacity(rows * cols);
         GenerateBoard(rows, cols);
     }
+    public void RestartGame()
+    {
+        StartCoroutine(UIFadeUtility.FadeOut(UiManager.Instance.statsPanel, 0.2f));
 
+        SaveManager.Instance.ClearData();
+        StartLevel(1);
+    }
     private IEnumerator NextLevel()
     {
         yield return new WaitForSeconds(3f);
         StartCoroutine(UIFadeUtility.FadeOut(UiManager.Instance.victoryPanel, 0.2f));
         StartLevel(currentLevel + 1);
-        SaveManager.Instance.playerData.currentLevel += currentLevel;
     }
 
     private void EndLevel()
     {
         Debug.Log("Game Over! All matches found.");
-        StartCoroutine(UIFadeUtility.FadeIn(UiManager.Instance.victoryPanel, 0.2f));
+        AudioManager.Instance.SetBGMVolume(0f);
 
-        int stars = CalculateStars(turnCount);
-        Debug.Log($"Level {currentLevel} completed with {stars} stars!");
+        AudioManager.Instance.PlaySFX("Victory");
+        if (currentLevel == 1)
+        {
+            AudioManager.Instance.PlaySFX("Win");
+            UiManager.Instance.CalculateOverallStars(102, 128);
+            StartCoroutine(UIFadeUtility.FadeIn(UiManager.Instance.statsPanel, 0.2f));
 
-        int earnGold = UiManager.Instance.CalculateGoldReward(activeCards, currentLevel, bestCombo);
-        SaveManager.Instance.playerData.coins +=earnGold;
-        UiManager.Instance.ShowLevelComplete(stars, earnGold);
+        }
+        else
+        {
+            StartCoroutine(UIFadeUtility.FadeIn(UiManager.Instance.victoryPanel, 0.2f));
+            int stars = CalculateStars(turnCount);
+            Debug.Log($"Level {currentLevel} completed with {stars} stars!");
 
+            int earnGold = UiManager.Instance.CalculateGoldReward(activeCards, currentLevel, bestCombo);
+            SaveManager.Instance.playerData.coins += earnGold;
+            UiManager.Instance.ShowLevelComplete(stars, earnGold);
         StartCoroutine(NextLevel());
+        }
     }
     #endregion
 
@@ -266,6 +283,7 @@ public class BoardManager : MonoBehaviour
             yield return new WaitForSeconds(gameConfig.flipAnimationDuration);
 
             turnCount++;
+            SaveManager.Instance.playerData.allTurn = turnCount;
             OnTurnChanged?.Invoke(turnCount);
 
             if (cardA.model.id == cardB.model.id)
@@ -294,6 +312,7 @@ public class BoardManager : MonoBehaviour
 
     private void HandleMatch(CardView cardA, CardView cardB)
     {
+        AudioManager.Instance.PlaySFX("Match");
         cardA.model.isMatched = true;
         cardB.model.isMatched = true;
 
@@ -312,6 +331,7 @@ public class BoardManager : MonoBehaviour
 
     private void HandleMismatch(CardView cardA, CardView cardB)
     {
+        AudioManager.Instance.PlaySFX("Mismatch");
         currentCombo = 0;
         UiManager.Instance.HideCombo();
 

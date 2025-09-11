@@ -20,6 +20,9 @@ public class AudioManager : MonoBehaviour
     public List<AudioClip> bgmClips;  // List of background music tracks
     public List<AudioClip> sfxClips;  // List of sound effects
 
+    [Header("Combo Clips")]
+    public List<AudioClip> comboClips;
+
     private Dictionary<string, AudioClip> bgmDict;
     private Dictionary<string, AudioClip> sfxDict;
 
@@ -100,6 +103,20 @@ public class AudioManager : MonoBehaviour
     {
         sfxVolume = Mathf.Clamp01(volume);
         if (sfxSource != null) sfxSource.volume = sfxVolume;
+    }
+    public void PlayComboSFX(AudioClip clip, float volume = 1f)
+    {
+        if (clip == null) return;
+        sfxSource.PlayOneShot(clip, volume);
+    }
+    public void PlayComboSound(int comboCount)
+    {
+        if (comboCount < 2) return; // Only play sound for combos 2+
+        int index = comboCount - 2; // combo 2 => index 0, combo 3 => index 1
+        if (index < comboClips.Count && comboClips[index] != null)
+        {
+            PlayComboSFX(comboClips[index]);
+        }
     }
     #endregion
 }
