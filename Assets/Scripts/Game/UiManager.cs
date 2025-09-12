@@ -128,12 +128,16 @@ public class UiManager : MonoBehaviour
     public void ShowCombo(int comboCounter)
     {
         if (comboCounter < 2) return; // only show after second consecutive match
+
+        comboText.transform.localScale = Vector3.zero;
+        comboText.color = new Color(comboText.color.r, comboText.color.g, comboText.color.b, 1);
+
         AudioManager.Instance.PlayComboSound(comboCounter);
 
         comboText.text = $"{comboCounter}x Combo!";
         comboText.gameObject.SetActive(true);
 
-        StopCoroutine(nameof(ComboPopAnimation)); // stop any running animation
+        StopAllCoroutines(); 
         StartCoroutine(ComboPopAnimation());
     }
 
@@ -144,7 +148,6 @@ public class UiManager : MonoBehaviour
 
     private IEnumerator ComboPopAnimation()
     {
-        comboText.transform.localScale = Vector3.zero;
         Vector3 targetScale = Vector3.one;
 
         float t = 0;
@@ -157,7 +160,7 @@ public class UiManager : MonoBehaviour
 
         yield return new WaitForSeconds(1f);
 
-        // fade out after delay
+        // Fade out after delay
         float fadeTime = 0.5f;
         t = 0;
         Color startColor = comboText.color;
@@ -178,6 +181,7 @@ public class UiManager : MonoBehaviour
     #region Level Complete
     public void ShowLevelComplete(int stars, int gold)
     {
+        HideCombo();
         coinEarn.text ="+"+ gold.ToString();
         StopAllCoroutines();
         for (int i = 0; i < starIcons.Length; i++)

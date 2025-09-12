@@ -101,7 +101,7 @@ public class BoardManager : MonoBehaviour
         AudioManager.Instance.SetBGMVolume(0f);
 
         AudioManager.Instance.PlaySFX("Victory");
-        if (currentLevel == 1)
+        if (currentLevel == 10)
         {
             AudioManager.Instance.PlaySFX("Win");
             UiManager.Instance.CalculateOverallStars(102, 128);
